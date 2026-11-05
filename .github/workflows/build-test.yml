@@ -51,6 +51,8 @@ jobs:
             artifacts: build/windows/x64/runner/Debug/*.exe
     steps:
       - uses: actions/checkout@v4
+      - name: Reset bootstrap platform dirs for regenerated runners
+        run: git rm -q -r --ignore-unmatch android ios macos linux windows
       - name: Sync shared yawala-core package
         run: git clone --depth 1 https://github.com/yawala-siwala/yawala-core.git ../yawala-core
       - uses: subosito/flutter-action@v2
