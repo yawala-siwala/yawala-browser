@@ -14,23 +14,31 @@ class BrowserHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Yawala Browser')),
-      body: ListenableBuilder(
-        listenable: state,
-        builder: (context, _) {
-          if (state.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final items = state.items.toList(growable: false);
-          if (items.isEmpty) {
-            return const Center(
-              child: Text('Nothing found - try a different search.'),
-            );
-          }
-          return ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) => WebTabCard(item: items[index]),
-          );
-        },
+      body: Column(
+        children: [
+          BrowserToolbar(state: state),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: state,
+              builder: (context, _) {
+                if (state.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final items = state.items.toList(growable: false);
+                if (items.isEmpty) {
+                  return const Center(
+                    child: Text('Nothing found - try a different search.'),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: items.length,
+                  itemBuilder: (context, index) =>
+                      WebTabCard(item: items[index]),
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'New tab',
