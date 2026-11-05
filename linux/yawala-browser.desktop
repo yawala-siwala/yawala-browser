@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Yawala Browser
+Comment=Cross-platform web browser, part of the Yawala-Siwala ecosystem. One Flutter code base targeting Android, iOS, Linux, macOS and Windows.
+Exec=yawala-browser
+TryExec=yawala-browser
+Icon=com.yawalasiwala.browser
+Terminal=false
+StartupWMClass=Yawala Browser
+Categories=Network;WebBrowser;

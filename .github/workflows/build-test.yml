@@ -1,0 +1,68 @@
+name: build-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Unit tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync shared yawala-core package
+        run: git clone --depth 1 https://github.com/yawala-siwala/yawala-core.git ../yawala-core
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  build:
+    name: Build (${{ matrix.label }})
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: android-apk
+            platforms: android
+            build-target: apk
+            artifacts: build/app/outputs/flutter-apk/app-debug.apk
+          - os: macos-latest
+            label: macos-app
+            platforms: macos
+            build-target: macos
+            artifacts: build/macos/Build/Products/Debug/*.app
+          - os: windows-latest
+            label: windows-exe
+            platforms: windows
+            build-target: windows
+            artifacts: build/windows/x64/runner/Debug/*.exe
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync shared yawala-core package
+        run: git clone --depth 1 https://github.com/yawala-siwala/yawala-core.git ../yawala-core
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Regenerate platform runner
+        run: flutter create . --platforms=${{ matrix.platforms }} --org com.yawalasiwala --project-name yawala_browser
+      - run: flutter pub get
+      - run: flutter build ${{ matrix.build-target }} --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.label }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
