@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:yawala_browser/domain/model.dart';
 import 'package:yawala_browser/domain/service.dart';
 
 void main() {
