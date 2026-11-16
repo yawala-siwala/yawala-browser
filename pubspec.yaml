@@ -8,6 +8,7 @@ environment:
   sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
+  material_ui: ^1.0.0
   flutter:
     sdk: flutter
   yawala_core:
