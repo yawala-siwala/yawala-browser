@@ -55,6 +55,26 @@ void main() {
     });
   });
 
+  group('native errors degrade to fallbacks', () {
+    test('hand-off, attach and navigation survive PlatformException',
+        () async {
+      messenger.setMockMethodCallHandler(browserChannel, (call) async {
+        throw PlatformException(code: 'E_ENGINE', message: 'webview gone');
+      });
+
+      expect(await binding.openCustomTab('https://flutter.dev'), isFalse);
+      expect(
+        await binding.createWebViewController(
+          tabId: 'tab-1',
+          initialUrl: 'https://flutter.dev',
+        ),
+        isNull,
+      );
+      await binding.navigate(tabId: 'tab-1', url: 'https://example.com');
+      await binding.clearCookiesAndCache();
+    });
+  });
+
   group('channel invocation safety (no native handler registered)', () {
     test('openCustomTab degrades to false', () async {
       expect(await binding.openCustomTab('https://flutter.dev'), isFalse);
