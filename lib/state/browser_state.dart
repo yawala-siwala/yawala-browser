@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:yawala_core/yawala_core.dart';
-
 import '../domain/model.dart';
 import '../domain/service.dart';
 import '../native/platform_bindings.dart';
