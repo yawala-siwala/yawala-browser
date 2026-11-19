@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:yawala_core/yawala_core.dart';
 
-import 'state/app_state.dart';
+import 'state/browser_state.dart';
 import 'ui/screens/home_screen.dart';
 
 /// Root widget for Yawala Browser.

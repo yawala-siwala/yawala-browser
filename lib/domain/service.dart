@@ -22,6 +22,9 @@ class BrowserService {
     if (value.isEmpty) {
       return 'about:blank';
     }
+    if (value == 'about:blank') {
+      return value;
+    }
     final isUrl = value.startsWith('http://') ||
         value.startsWith('https://') ||
         RegExp(r'^\S+\.\S{2,}').hasMatch(value);

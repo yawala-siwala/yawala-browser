@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../state/app_state.dart';
+import '../../state/browser_state.dart';
 
 /// Search / filter bar shown above the tabs list.
 class BrowserToolbar extends StatelessWidget {
@@ -29,7 +29,7 @@ class BrowserToolbar extends StatelessWidget {
             listenable: state,
             builder: (context, _) => Padding(
               padding: const EdgeInsets.only(left: 10),
-              child: Chip(label: Text('${state.items.length} tabs')),
+              child: Chip(label: Text('${state.visibleTabs.length} tabs')),
             ),
           ),
         ],

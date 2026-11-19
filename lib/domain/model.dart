@@ -21,10 +21,10 @@ class WebTab {
       displayName.toLowerCase().contains(query) ||
       host.toLowerCase().contains(query);
 
-  WebTab copyWith({String? title, bool? isLoading}) => WebTab(
+  WebTab copyWith({String? title, String? url, bool? isLoading}) => WebTab(
         id: id,
         title: title ?? this.title,
-        url: url,
+        url: url ?? this.url,
         isLoading: isLoading ?? this.isLoading,
       );
 
