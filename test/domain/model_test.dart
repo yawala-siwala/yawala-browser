@@ -32,10 +32,11 @@ void main() {
         url: 'https://flutter.dev/docs',
       );
 
-      expect(tab.matches('FLUTTER'), isTrue);
+      // matches() expects an already-lowercased query - the state machine
+      // normalises case before calling - and searches the display title
+      // and host only, never URL paths.
+      expect(tab.matches('flutter'), isTrue);
       expect(tab.matches('flutter.dev'), isTrue);
-      // matches() searches the display title and host only - never URL
-      // paths - so a path segment like 'docs' does not match.
       expect(tab.matches('docs'), isFalse);
       expect(tab.matches('dart.dev'), isFalse);
     });

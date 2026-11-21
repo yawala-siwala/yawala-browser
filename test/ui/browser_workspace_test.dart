@@ -104,9 +104,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('attached: engine-1'), findsOneWidget);
 
-    // Close the active tab via its chip's delete affordance.
+    // Close the active tab via its chip's delete affordance. The chips in
+    // this strip carry no avatar, so their only Icon is the delete icon -
+    // found by type instead of a hard-coded IconData.
     await tester.tap(
-      find.descendant(of: firstChip.first, matching: find.byIcon(Icons.cancel)),
+      find
+          .descendant(of: firstChip.first, matching: find.byType(Icon))
+          .first,
     );
     await tester.pumpAndSettle();
     expect(state.tabs, hasLength(1));
