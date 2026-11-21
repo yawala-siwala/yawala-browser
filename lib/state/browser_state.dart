@@ -119,7 +119,8 @@ class BrowserState extends ChangeNotifier {
 
   /// Normalises the address bar through [BrowserService.resolveInput],
   /// pushes the current URL onto the back history and navigates the active
-  /// tab. No-op without an active tab.
+  /// tab. Title, address bar and loading status all stay in sync. No-op
+  /// without an active tab.
   Future<void> submitAddress() async {
     final tab = activeTab;
     if (tab == null) {
@@ -130,8 +131,11 @@ class BrowserState extends ChangeNotifier {
     _pushHistory(tab.id, tab.url);
     _updateTab(
       tab.id,
-      (current) =>
-          current.copyWith(url: resolved, title: resolved, isLoading: true),
+      (current) => current.copyWith(
+        url: resolved,
+        title: _service.titleFor(resolved),
+        isLoading: true,
+      ),
     );
     notifyListeners();
     await _native.navigate(tabId: tab.id, url: resolved);
@@ -140,7 +144,8 @@ class BrowserState extends ChangeNotifier {
   }
 
   /// Pops the back history of the active tab and navigates to the previous
-  /// URL. No-op on an empty history.
+  /// URL, mirroring the same title/address/loading sync as
+  /// [submitAddress]. No-op on an empty history.
   Future<void> goBack() async {
     final tab = activeTab;
     if (tab == null) {
@@ -154,8 +159,11 @@ class BrowserState extends ChangeNotifier {
     _addressText = previous;
     _updateTab(
       tab.id,
-      (current) =>
-          current.copyWith(url: previous, title: previous, isLoading: true),
+      (current) => current.copyWith(
+        url: previous,
+        title: _service.titleFor(previous),
+        isLoading: true,
+      ),
     );
     notifyListeners();
     await _native.navigate(tabId: tab.id, url: previous);

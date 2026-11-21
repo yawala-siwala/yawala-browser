@@ -1,18 +1,12 @@
 import 'model.dart';
 
 /// Session data access for the browser: tab creation, URL resolution and
-/// sample bookmark data.
+/// human-friendly title derivation.
 ///
 /// TODO(mvp): replace with native web-engine bindings
 /// (`platform_bindings.dart`) that embed a real renderer per platform.
 class BrowserService {
   BrowserService();
-
-  static const List<WebTab> seedLibrary = [
-    WebTab(id: 'tab-1', title: 'OpenCode docs', url: 'https://docs.opencode.dev'),
-    WebTab(id: 'tab-2', title: 'Flutter', url: 'https://flutter.dev'),
-    WebTab(id: 'tab-3', title: 'Yawala-Siwala org', url: 'https://github.com/yawala-siwala'),
-  ];
 
   int _counter = 0;
 
@@ -34,15 +28,19 @@ class BrowserService {
     return value.startsWith('http') ? value : 'https://$value';
   }
 
-  /// Creates a tab stub; the native engine joins the session on attach.
+  /// Derives the tab title for [url]: the host when the URL has one,
+  /// otherwise the URL itself (covers `about:blank` and data URLs). Keeps
+  /// tab chips, the address bar and the status panel showing the same label.
+  String titleFor(String url) {
+    final host = Uri.tryParse(url)?.host ?? '';
+    return host.isEmpty ? url : host;
+  }
+
+  /// Creates a tab for [input]; the native engine joins the session on
+  /// attach.
   WebTab createTab(String input) {
     _counter += 1;
     final url = resolveInput(input);
-    return WebTab(id: 'tab-$_counter', title: url, url: url);
-  }
-
-  Future<List<WebTab>> list() async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return List.unmodifiable(seedLibrary);
+    return WebTab(id: 'tab-$_counter', title: titleFor(url), url: url);
   }
 }

@@ -81,6 +81,16 @@ void main() {
       final tab = await state.openTab('about:blank');
 
       expect(tab.url, 'about:blank');
+      expect(tab.title, 'about:blank');
+    });
+
+    test('openTab titles tabs by host, never by raw URL', () async {
+      final state = buildState();
+
+      final tab = await state.openTab('https://docs.opencode.dev/api');
+
+      expect(tab.url, 'https://docs.opencode.dev/api');
+      expect(tab.title, 'docs.opencode.dev');
     });
 
     test('activate switches the active tab and address bar', () async {
@@ -158,6 +168,8 @@ void main() {
 
       expect(state.activeTab?.url, 'https://example.com');
       expect(state.addressText, 'https://example.com');
+      // The title stays in sync with the resolved URL's host.
+      expect(state.activeTab?.title, 'example.com');
       expect(state.historyDepthFor(state.activeTab!.id), 1);
       expect(state.canGoBack, isTrue);
       expect(native.navigations, ['https://example.com']);
@@ -176,6 +188,8 @@ void main() {
 
       expect(state.activeTab?.url, original);
       expect(state.addressText, original);
+      // Title re-derivation follows the restored URL.
+      expect(state.activeTab?.title, 'flutter.dev');
       expect(state.canGoBack, isFalse);
       expect(native.navigations, ['https://dart.dev', original]);
     });
