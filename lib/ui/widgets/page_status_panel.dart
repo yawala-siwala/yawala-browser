@@ -91,14 +91,17 @@ class PageStatusPanel extends StatelessWidget {
                             '${formatIsoDate(state.lastClearedAt!)}',
                   ),
                   const SizedBox(height: YawalaSpacing.md),
-                  Row(
+                  // Wrap instead of Row: the two buttons flow onto a second
+                  // line on narrow viewports instead of overflowing.
+                  Wrap(
+                    spacing: YawalaSpacing.sm,
+                    runSpacing: YawalaSpacing.sm,
                     children: [
                       FilledButton.tonalIcon(
                         onPressed: () => unawaited(state.attachEngineToActiveTab()),
                         icon: const Icon(Icons.extension),
                         label: const Text('Attach engine'),
                       ),
-                      const SizedBox(width: YawalaSpacing.sm),
                       FilledButton.tonalIcon(
                         onPressed: () =>
                             unawaited(state.openInCustomTab(tab.url)),

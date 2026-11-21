@@ -33,7 +33,10 @@ void main() {
       );
 
       expect(tab.matches('FLUTTER'), isTrue);
-      expect(tab.matches('docs'), isTrue);
+      expect(tab.matches('flutter.dev'), isTrue);
+      // matches() searches the display title and host only - never URL
+      // paths - so a path segment like 'docs' does not match.
+      expect(tab.matches('docs'), isFalse);
       expect(tab.matches('dart.dev'), isFalse);
     });
 
