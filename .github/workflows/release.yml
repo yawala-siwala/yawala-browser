@@ -1,0 +1,93 @@
+﻿name: release
+
+# Tag-driven release pipeline. Deliberately separate from build-test.yml
+# (which triggers on main pushes / PRs), so everyday CI runs are unaffected.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Release build (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: android-apk
+            platforms: android
+            build-target: apk
+          - os: macos-latest
+            label: macos-app
+            platforms: macos
+            build-target: macos
+          - os: windows-latest
+            label: windows-exe
+            platforms: windows
+            build-target: windows
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reset bootstrap platform dirs for regenerated runners
+        run: git rm -q -r --ignore-unmatch android ios macos linux windows
+      - name: Sync shared yawala-core package
+        run: git clone --depth 1 https://github.com/yawala-siwala/yawala-core.git ../yawala-core
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Regenerate platform runner
+        run: flutter create . --platforms=${{ matrix.platforms }} --org com.yawalasiwala --project-name yawala_browser
+      - run: flutter pub get
+      - run: flutter build ${{ matrix.build-target }} --release
+
+      - name: Stage release bundle (Android)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/yawala-browser-${{ github.ref_name }}.apk"
+
+      - name: Stage release bundle (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p dist
+          cd build/macos/Build/Products/Release
+          zip -r -y "$GITHUB_WORKSPACE/dist/yawala-browser-${{ github.ref_name }}-macos.zip" .
+
+      - name: Stage release bundle (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath "dist/yawala-browser-${{ github.ref_name }}-windows.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.label }}
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish release with generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "Yawala Browser ${{ github.ref_name }}" \
+            --generate-notes \
+            --verify-tag \
+            dist/*
