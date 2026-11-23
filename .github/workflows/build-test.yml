@@ -1,4 +1,4 @@
-name: build-test
+﻿name: build-test
 
 on:
   push:
@@ -61,7 +61,12 @@ jobs:
           cache: true
       - name: Regenerate platform runner
         run: flutter create . --platforms=${{ matrix.platforms }} --org com.yawalasiwala --project-name yawala_browser
-      - run: flutter pub get
+      - name: Restore native Android runner overlay
+        shell: bash
+        run: |
+          if [ -d android_native ]; then
+            cp -a android_native/. android/
+          fi      - run: flutter pub get
       - run: flutter build ${{ matrix.build-target }} --debug
       - uses: actions/upload-artifact@v4
         with:

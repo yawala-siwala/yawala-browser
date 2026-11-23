@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../domain/model.dart';
 import '../domain/service.dart';
 import '../native/platform_bindings.dart';
+import '../native/web_engine.dart';
 
 /// Reactive state machine for Yawala Browser.
 ///
@@ -15,11 +16,18 @@ class BrowserState extends ChangeNotifier {
   BrowserState({
     required BrowserNativeBinding native,
     required BrowserService service,
+    WebEngineFactory? engineFactory,
   })  : _native = native,
-        _service = service;
+        _service = service,
+        _engineFactory = engineFactory;
 
   final BrowserNativeBinding _native;
   final BrowserService _service;
+
+  /// Optional real web-rendering factory (webview_flutter). When present,
+  /// [attachEngineToActiveTab] attaches a live engine per tab and page
+  /// events stream back through [pageDidStart]/[pageDidFinish].
+  final WebEngineFactory? _engineFactory;
 
   List<WebTab> _tabs = const <WebTab>[];
   String? _activeTabId;
@@ -27,6 +35,7 @@ class BrowserState extends ChangeNotifier {
   String _addressText = '';
   final Map<String, List<String>> _history = <String, List<String>>{};
   final Map<String, WebViewHandle> _engineHandles = <String, WebViewHandle>{};
+  final Map<String, WebEngine> _engines = <String, WebEngine>{};
   bool _lastCustomTabOpened = false;
   DateTime? _lastClearedAt;
 
@@ -63,6 +72,10 @@ class BrowserState extends ChangeNotifier {
   /// The attached native engine handle for [tabId], if any.
   WebViewHandle? engineHandleFor(String tabId) => _engineHandles[tabId];
 
+  /// The live web-rendering engine for [tabId], when the platform supports
+  /// real page rendering and the engine was attached.
+  WebEngine? engineFor(String tabId) => _engines[tabId];
+
   /// Boots the session with a start tab when the workspace is empty.
   Future<void> load() async {
     if (_tabs.isEmpty) {
@@ -92,11 +105,13 @@ class BrowserState extends ChangeNotifier {
   }
 
   /// Closes a tab; when the active tab closes, activation falls to the
-  /// last remaining tab. Engine handles and history are dropped too.
+  /// last remaining tab. Engine handles, live engines and history are
+  /// dropped too.
   void close(String tabId) {
     _tabs = _tabs.where((tab) => tab.id != tabId).toList(growable: false);
     _history.remove(tabId);
     _engineHandles.remove(tabId);
+    _engines.remove(tabId);
     if (_activeTabId == tabId) {
       _activeTabId = _tabs.isEmpty ? null : _tabs.last.id;
       final tab = activeTab;
@@ -139,6 +154,9 @@ class BrowserState extends ChangeNotifier {
     );
     notifyListeners();
     await _native.navigate(tabId: tab.id, url: resolved);
+    // Drive the live engine (when attached) to the resolved URL; its page
+    // callbacks stream the loading state back through [pageDidStart].
+    unawaited(_engines[tab.id]?.load(resolved));
     _updateTab(tab.id, (current) => current.copyWith(isLoading: false));
     notifyListeners();
   }
@@ -167,12 +185,15 @@ class BrowserState extends ChangeNotifier {
     );
     notifyListeners();
     await _native.navigate(tabId: tab.id, url: previous);
+    unawaited(_engines[tab.id]?.load(previous));
     _updateTab(tab.id, (current) => current.copyWith(isLoading: false));
     notifyListeners();
   }
 
   /// Attaches a native web view engine to the active tab (null on
-  /// unsupported platforms - the handle simply stays absent).
+  /// unsupported platforms - the handle simply stays absent) and, when a
+  /// real [WebEngineFactory] is available, a live rendering engine that
+  /// immediately loads the tab's URL.
   Future<void> attachEngineToActiveTab() async {
     final tab = activeTab;
     if (tab == null) {
@@ -184,6 +205,58 @@ class BrowserState extends ChangeNotifier {
     );
     if (handle != null) {
       _engineHandles[tab.id] = handle;
+    }
+    await attachRealEngine(tab.id, tab.url);
+    notifyListeners();
+  }
+
+  /// Creates and stores the live rendering engine for [tabId] through the
+  /// injected factory (no-op when absent or already attached).
+  Future<void> attachRealEngine(String tabId, String initialUrl) async {
+    final factory = _engineFactory;
+    if (factory == null || _engines.containsKey(tabId)) {
+      return;
+    }
+    final engine = await factory.create(
+      tabId: tabId,
+      initialUrl: initialUrl,
+      onPageStarted: (url) => pageDidStart(tabId, url),
+      onPageFinished: (url, title) => pageDidFinish(tabId, url, title),
+    );
+    if (engine != null) {
+      _engines[tabId] = engine;
+    }
+  }
+
+  /// Called by the live engine when a page starts loading: syncs the tab's
+  /// URL and loading state, and mirrors the URL into the address bar when
+  /// the tab is active.
+  void pageDidStart(String tabId, String url) {
+    _updateTab(
+      tabId,
+      (current) => current.copyWith(url: url, isLoading: true),
+    );
+    if (_activeTabId == tabId && url.isNotEmpty) {
+      _addressText = url;
+    }
+    notifyListeners();
+  }
+
+  /// Called by the live engine when a page finishes: records the real
+  /// document title (falling back to the URL's host) and clears loading.
+  void pageDidFinish(String tabId, String url, String? title) {
+    _updateTab(
+      tabId,
+      (current) => current.copyWith(
+        url: url,
+        title: (title == null || title.isEmpty)
+            ? _service.titleFor(url)
+            : title,
+        isLoading: false,
+      ),
+    );
+    if (_activeTabId == tabId && url.isNotEmpty) {
+      _addressText = url;
     }
     notifyListeners();
   }

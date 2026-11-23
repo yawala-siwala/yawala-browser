@@ -5,6 +5,7 @@ import '../widgets/address_bar.dart';
 import '../widgets/browser_toolbar.dart';
 import '../widgets/page_status_panel.dart';
 import '../widgets/tab_strip.dart';
+import '../widgets/web_page_view.dart';
 
 /// Responsive browser workspace: omnibox, tab management and a clean
 /// page/tab status view. Narrow layouts use a horizontal tab strip above
@@ -35,6 +36,15 @@ class BrowserHomeScreen extends StatelessWidget {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= 900;
+          final pagePane = ListenableBuilder(
+            listenable: state,
+            builder: (context, _) {
+              final engine = state.engineFor(state.activeTab?.id ?? '');
+              return engine == null
+                  ? PageStatusPanel(state: state)
+                  : WebPageView(state: state);
+            },
+          );
           if (wide) {
             return Column(
               children: [
@@ -55,10 +65,7 @@ class BrowserHomeScreen extends StatelessWidget {
                         ),
                       ),
                       const VerticalDivider(width: 1),
-                      Expanded(
-                        flex: 2,
-                        child: PageStatusPanel(state: state),
-                      ),
+                      Expanded(flex: 2, child: pagePane),
                     ],
                   ),
                 ),
@@ -70,7 +77,7 @@ class BrowserHomeScreen extends StatelessWidget {
               AddressBar(state: state),
               TabStrip(state: state),
               const Divider(height: 1),
-              Expanded(child: PageStatusPanel(state: state)),
+              Expanded(child: pagePane),
             ],
           );
         },

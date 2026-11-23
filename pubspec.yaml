@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   material_ui: ^1.0.0
+  webview_flutter: ^4.7.0
   flutter:
     sdk: flutter
   yawala_core:
