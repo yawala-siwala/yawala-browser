@@ -48,16 +48,16 @@ class WebViewEngineFactory implements WebEngineFactory {
     required void Function(String url, String? title) onPageFinished,
   }) async {
     final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: onPageStarted,
-          onPageFinished: (url) {
-            // The document title only exists once the page finished parsing.
-            controller.getTitle().then((title) => onPageFinished(url, title));
-          },
-        ),
-      );
+      ..setJavaScriptMode(JavaScriptMode.unrestricted);
+    controller.setNavigationDelegate(
+      NavigationDelegate(
+        onPageStarted: onPageStarted,
+        onPageFinished: (url) {
+          // The document title only exists once the page finished parsing.
+          controller.getTitle().then((title) => onPageFinished(url, title));
+        },
+      ),
+    );
     await loadInto(controller, initialUrl);
     return WebViewEngine(controller);
   }
@@ -98,10 +98,10 @@ class WebViewEngine implements WebEngine {
   Future<bool> canGoForward() => controller.canGoForward();
 
   @override
-  Future<void> back() => controller.back();
+  Future<void> back() => controller.goBack();
 
   @override
-  Future<void> forward() => controller.forward();
+  Future<void> forward() => controller.goForward();
 
   @override
   Future<void> reload() => controller.reload();
